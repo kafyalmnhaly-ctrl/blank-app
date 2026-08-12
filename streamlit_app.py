@@ -1,278 +1,144 @@
-from __future__ import annotations
-
-import re
-from dataclasses import dataclass
-from urllib.parse import quote, urlparse
-
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import re
+import json
+import urllib.parse
 
+# إعدادات الصفحة
+st.set_page_config(page_title="كافي أونلاين - حاسبة التكلفة", page_icon="🛍️", layout="centered")
 
-SERVICE_FEE_RATE = 0.05
-ESTIMATED_SHIPPING_USD = 5.0
-USD_TO_YER = 1680
+# --- الثوابت وإعدادات العملة ---
+EXCHANGE_RATE_SAR_TO_YER = 445.0  # سعر صرف الريال السعودي مقابل اليمني
+SHIPPING_FEE_SAR = 18.75           # الشحن التقديري بالريال السعودي
+SERVICE_FEE_PERCENT = 0.05        # رسوم الخدمة 5%
+YOUR_WHATSAPP_NUMBER = "967700000000"  # اكتب رقم الواتساب هنا بالرمز الدولي بدون +
 
+st.title("كافي أونلاين 🛍️")
+st.subheader("حاسبة تكلفة الطلب من الخارج")
 
-@dataclass(frozen=True)
-class Quote:
-    product_url: str
-    product_price_usd: float
-    service_fee_usd: float
-    shipping_usd: float
-    total_usd: float
-    total_yer: int
+# تنبيه مناطق التوصيل
+st.info("📍 **مناطق التوصيل المتاحة حالياً:** حضرموت - عدن فقط.")
 
+st.write("أدخل رابط المنتج من (SHEIN أو غيره) لجلب بياناته وحساب التكلفة التقديرية بالريال اليمني.")
 
-# Replace the account placeholders with the confirmed merchant details.
-BANK_DETAILS = (
-    {
-        "name": "مصرف الكريمي",
-        "account_name": "يُضاف اسم صاحب الحساب",
-        "account_number": "يُضاف رقم الحساب",
-    },
-    {
-        "name": "بنك أمقي",
-        "account_name": "يُضاف اسم صاحب الحساب",
-        "account_number": "يُضاف رقم الحساب",
-    },
-)
+# --- وظيفة جلب بيانات المنتج والسعر تلقائياً ---
+def fetch_product_details(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "ar-SA,ar;q=0.9,en-US;q=0.8,en;q=0.7"
+    }
+    details = {"title": None, "image": None, "price": None}
+    try:
+        match = re.search(r'https?://[^\s]+', url)
+        clean_url = match.group(0) if match else url
+        
+        response = requests.get(clean_url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 1. جلب الصورة
+            og_image = soup.find("meta", property="og:image") or soup.find("meta", attrs={"name": "og:image"})
+            if og_image and og_image.get("content"):
+                details["image"] = og_image["content"]
+                
+            # 2. جلب العنوان
+            og_title = soup.find("meta", property="og:title") or soup.find("title")
+            if og_title:
+                details["title"] = og_title.get("content") or og_title.text
 
+            # 3. جلب السعر تلقائياً
+            og_price = soup.find("meta", property="og:price:amount") or soup.find("meta", attrs={"name": "twitter:data1"})
+            if og_price and og_price.get("content"):
+                p_match = re.search(r'(\d+(\.\d+)?)', og_price["content"])
+                if p_match:
+                    details["price"] = float(p_match.group(1))
 
-def format_usd(value: float) -> str:
-    return f"${value:,.2f}"
+            if not details["price"]:
+                json_scripts = soup.find_all('script', type='application/ld+json')
+                for script in json_scripts:
+                    if script.string:
+                        try:
+                            data = json.loads(script.string)
+                            if isinstance(data, list):
+                                data = data[0]
+                            if isinstance(data, dict) and 'offers' in data:
+                                offers = data['offers']
+                                if isinstance(offers, list):
+                                    offers = offers[0]
+                                if 'price' in offers:
+                                    details["price"] = float(offers['price'])
+                                    break
+                        except Exception:
+                            continue
+    except Exception:
+        pass
+    return details
 
+# --- واجهة المستخدم ---
+product_url = st.text_input("رابط المنتج", placeholder="https://www.shein.com/...")
 
-def format_yer(value: int) -> str:
-    return f"{value:,} ريال"
+scraped_image = None
+scraped_title = None
+auto_price = 0.0
 
+if product_url:
+    with st.spinner("جاري جلب تفاصيل المنتج والسعر تلقائياً..."):
+        fetched = fetch_product_details(product_url)
+        scraped_image = fetched.get("image")
+        scraped_title = fetched.get("title")
+        if fetched.get("price"):
+            auto_price = float(fetched.get("price"))
+        
+    if scraped_image:
+        st.image(scraped_image, caption=scraped_title or "صورة المنتج", use_column_width=True)
+    elif scraped_title:
+        st.info(f"المنتج: {scraped_title}")
 
-def is_valid_product_url(value: str) -> bool:
-    parsed = urlparse(value.strip())
-    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
-
-
-def normalize_phone_number(value: str) -> str:
-    return re.sub(r"\D", "", value)
-
-
-def build_whatsapp_url(phone_number: str, quote_data: Quote) -> str:
-    message = (
-        "مرحباً، أريد تأكيد طلب شراء:\n"
-        f"رابط المنتج: {quote_data.product_url}\n"
-        f"سعر المنتج: {format_usd(quote_data.product_price_usd)}\n"
-        f"الإجمالي بالدولار: {format_usd(quote_data.total_usd)}\n"
-        f"الإجمالي بالريال اليمني: {format_yer(quote_data.total_yer)}"
+with st.form("calc_form"):
+    city = st.selectbox("اختر مدينة التوصيل", ["حضرموت", "عدن"])
+    price_sar = st.number_input(
+        "سعر المنتج بالريال السعودي (SAR)", 
+        min_value=0.0, 
+        value=auto_price, 
+        step=1.0, 
+        format="%.2f",
+        help="يتم تعبئة السعر تلقائياً عند قراءة الرابط، ويمكنك تعديله يدوياً."
     )
-    return f"https://wa.me/{phone_number}?text={quote(message)}"
+    submitted = st.form_submit_button("احسب التكلفة")
 
-
-def inject_rtl_styles() -> None:
-    st.markdown(
-        """
-        <style>
-        html, body, [data-testid="stAppViewContainer"],
-        [data-testid="stSidebar"], [data-testid="stHeader"] {
-            direction: rtl;
-        }
-        [data-testid="stAppViewContainer"] * {
-            text-align: right;
-        }
-        [data-testid="stMetricValue"] {
-            direction: ltr;
-            text-align: right;
-        }
-        [data-testid="stMetricLabel"] {
-            text-align: right;
-        }
-        .quote-header {
-            border-right: 4px solid #d28b45;
-            padding: 0.15rem 0.9rem 0.25rem 0;
-            margin: 1rem 0 0.75rem;
-        }
-        .quote-header h2 {
-            margin-bottom: 0.15rem;
-        }
-        .quote-header p {
-            color: #69727d;
-            margin: 0;
-        }
-        .bank-card {
-            border: 1px solid rgba(49, 51, 63, 0.18);
-            border-radius: 0.75rem;
-            padding: 1rem 1.1rem;
-            min-height: 150px;
-            background: rgba(255, 255, 255, 0.55);
-        }
-        .bank-card h3 {
-            margin: 0 0 0.8rem;
-        }
-        .bank-card p {
-            margin: 0.35rem 0;
-        }
-        .bank-label {
-            color: #69727d;
-            font-size: 0.85rem;
-        }
-        .bank-value {
-            font-weight: 600;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def render_quote(quote_data: Quote) -> None:
-    st.markdown(
-        """
-        <div class="quote-header">
-            <h2>ملخص التكلفة</h2>
-            <p>هذه هي التكلفة التقديرية للطلب قبل الدفع.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    metric_columns = st.columns(3)
-    with metric_columns[0]:
-        st.metric("سعر المنتج", format_usd(quote_data.product_price_usd))
-    with metric_columns[1]:
-        st.metric("رسوم الخدمة (5%)", format_usd(quote_data.service_fee_usd))
-    with metric_columns[2]:
-        st.metric("الشحن التقديري", format_usd(quote_data.shipping_usd))
-
-    st.success(
-        f"الإجمالي التقديري: {format_usd(quote_data.total_usd)}  "
-        f"يعادل تقريباً **{format_yer(quote_data.total_yer)}**"
-    )
-    st.caption(
-        f"سعر التحويل المستخدم: 1 دولار = {USD_TO_YER:,} ريال يمني. "
-        "قد يختلف المبلغ النهائي إذا تغيّر سعر الصرف أو الشحن الفعلي."
-    )
-
-
-def render_payment_details(quote_data: Quote) -> None:
-    st.markdown(
-        """
-        <div class="quote-header">
-            <h2>طريقة الدفع</h2>
-            <p>حوّل المبلغ إلى أحد الحسابين، ثم أرسل صورة الإيصال للتأكيد.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    bank_columns = st.columns(2)
-    for column, bank in zip(bank_columns, BANK_DETAILS):
-        with column:
-            st.markdown(
-                f"""
-                <div class="bank-card">
-                    <h3>{bank["name"]}</h3>
-                    <p><span class="bank-label">اسم الحساب:</span><br>
-                    <span class="bank-value">{bank["account_name"]}</span></p>
-                    <p><span class="bank-label">رقم الحساب:</span><br>
-                    <span class="bank-value">{bank["account_number"]}</span></p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-    st.info(
-        "مهم: تأكد من اسم صاحب الحساب ورقم الحساب قبل التحويل. "
-        "بيانات الحساب الظاهرة حالياً تحتاج إلى تحديث من إدارة المتجر."
-    )
-
-    st.markdown("#### تأكيد الدفع عبر واتساب")
-    whatsapp_number = st.text_input(
-        "رقم واتساب المتجر",
-        placeholder="مثال: 9677XXXXXXX",
-        help="اكتب الرقم مع مفتاح الدولة، مثل 967، بدون علامة +.",
-    )
-    normalized_number = normalize_phone_number(whatsapp_number)
-
-    if normalized_number:
-        st.link_button(
-            "إرسال تفاصيل الطلب عبر واتساب",
-            build_whatsapp_url(normalized_number, quote_data),
-            use_container_width=True,
-        )
+if submitted:
+    if price_sar <= 0:
+        st.error("يرجى إدخال/التأكد من سعر المنتج.")
     else:
-        st.button(
-            "إرسال تفاصيل الطلب عبر واتساب",
-            disabled=True,
-            use_container_width=True,
-            help="أدخل رقم واتساب المتجر لتفعيل الزر.",
-        )
-        st.caption("أدخل رقم واتساب المتجر أولاً لتفعيل زر التأكيد.")
+        service_fee_sar = price_sar * SERVICE_FEE_PERCENT
+        total_sar = price_sar + SHIPPING_FEE_SAR + service_fee_sar
+        total_yer = total_sar * EXCHANGE_RATE_SAR_TO_YER
+        
+        st.success("تم حساب التكلفة بنجاح!")
+        st.markdown(f"### 💵 التكلفة الإجمالية: **{total_yer:,.0f} ريال يمني**")
+        
+        st.write("---")
+        st.write("**تفاصيل الحساب:**")
+        st.write(f"- مدينة التوصيل: `{city}`")
+        st.write(f"- سعر المنتج: `{price_sar:.2f} ر.س`")
+        st.write(f"- الشحن التقديري: `{SHIPPING_FEE_SAR:.2f} ر.س`")
+        st.write(f"- رسوم الخدمة (5%): `{service_fee_sar:.2f} ر.س`")
+        st.write(f"- سعر صرف الريال السعودي: `{EXCHANGE_RATE_SAR_TO_YER:,.0f} ر.ي`")
+        
+        # رسالة ضمان الشحنة
+        st.warning("🛡️ **ضمان كافي أونلاين:** إذا لم تصلك شحنتك لأي سبب، نضمن لك استرجاع أموالك بالكامل.")
+        
+        # تجهيز رابط الواتساب
+        msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n"
+        msg += f"📍 المدينة: {city}\n"
+        if product_url:
+            msg += f"🔗 الرابط: {product_url}\n"
+        msg += f"💰 السعر بالريال السعودي: {price_sar:.2f} ر.س\n"
+        msg += f"🇾🇪 التكلفة الإجمالية المقدرة: {total_yer:,.0f} ريال يمني"
+        
+        whatsapp_url = f"https://wa.me/{YOUR_WHATSAPP_NUMBER}?text={urllib.parse.quote(msg)}"
+        st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="display:inline-block; background-color:#25D366; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; font-weight:bold;">📲 إرسال الطلب عبر الواتساب</a>', unsafe_allowed_html=True)
 
-
-def main() -> None:
-    st.set_page_config(
-        page_title="سوق اليمن | حاسبة تكلفة الطلب",
-        page_icon="س",
-        layout="centered",
-        initial_sidebar_state="collapsed",
-    )
-    inject_rtl_styles()
-
-    st.title("سوق اليمن")
-    st.subheader("حاسبة تكلفة الطلب من الخارج")
-    st.write(
-        "أدخل رابط المنتج وسعره بالدولار لمعرفة التكلفة التقديرية "
-        "بالريال اليمني قبل إتمام الدفع."
-    )
-
-    with st.form("quote_form"):
-        product_url = st.text_input(
-            "رابط المنتج",
-            placeholder="https://example.com/product",
-            help="أدخل الرابط الكامل للمنتج الذي تريد شراءه.",
-        )
-        product_price_usd = st.number_input(
-            "سعر المنتج بالدولار الأمريكي",
-            min_value=0.0,
-            step=1.0,
-            format="%.2f",
-            help="اكتب سعر المنتج كما يظهر في الموقع.",
-        )
-        submitted = st.form_submit_button(
-            "احسب التكلفة",
-            type="primary",
-            use_container_width=True,
-        )
-
-    if submitted:
-        if not product_url.strip():
-            st.error("يرجى إدخال رابط المنتج.")
-        elif not is_valid_product_url(product_url):
-            st.error("يرجى إدخال رابط صحيح يبدأ بـ http:// أو https://.")
-        elif product_price_usd <= 0:
-            st.error("يرجى إدخال سعر أكبر من صفر.")
-        else:
-            service_fee = product_price_usd * SERVICE_FEE_RATE
-            total_usd = (
-                product_price_usd + service_fee + ESTIMATED_SHIPPING_USD
-            )
-            st.session_state.quote = Quote(
-                product_url=product_url.strip(),
-                product_price_usd=product_price_usd,
-                service_fee_usd=service_fee,
-                shipping_usd=ESTIMATED_SHIPPING_USD,
-                total_usd=total_usd,
-                total_yer=round(total_usd * USD_TO_YER),
-            )
-
-    quote_data = st.session_state.get("quote")
-    if quote_data:
-        render_quote(quote_data)
-        render_payment_details(quote_data)
-
-    st.divider()
-    st.caption(
-        f"رسوم الخدمة {SERVICE_FEE_RATE:.0%} • الشحن التقديري "
-        f"{format_usd(ESTIMATED_SHIPPING_USD)} • سعر الصرف {USD_TO_YER:,}"
-    )
-
-
-if __name__ == "__main__":
-    main()
+st.write("---")
+st.caption(f"التوصيل: حضرموت وعدن • رسوم الخدمة 5% • سعر الصرف {EXCHANGE_RATE_SAR_TO_YER:,.0f} ر.ي")

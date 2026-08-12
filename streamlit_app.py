@@ -1,67 +1,186 @@
 import streamlit as st
 import urllib.parse
 
-# إعدادات الصفحة
-st.set_page_config(page_title="كافي أونلاين - حاسبة التكلفة", page_icon="🛍️", layout="centered")
+# --- 1. إعدادات الصفحة والتصميم الجذاب ---
+st.set_page_config(
+    page_title="كافي أونلاين | التسوق الشامل",
+    page_icon="🛍️",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# --- الثوابت وإعدادات العملة ---
-EXCHANGE_RATE_SAR_TO_YER = 445.0  # سعر صرف الريال السعودي مقابل اليمني
-SHIPPING_FEE_SAR = 18.75           # الشحن التقديري بالريال السعودي
-SERVICE_FEE_PERCENT = 0.05        # رسوم الخدمة 5%
-YOUR_WHATSAPP_NUMBER = "967700000000"  # اكتب رقم الواتساب الخاص بك هنا
+# تنسيق CSS مخصص للواجهة
+st.markdown("""
+    <style>
+    .main-title {
+        text-align: center;
+        color: #FF4B4B;
+        font-size: 2.6rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .sub-title {
+        text-align: center;
+        color: #666;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+    .search-box {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+        margin-bottom: 20px;
+    }
+    .product-card {
+        background-color: #ffffff;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    .price-tag {
+        color: #2E7D32;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin: 5px 0;
+    }
+    .tag-badge {
+        background-color: #FFE5E5;
+        color: #FF4B4B;
+        padding: 3px 8px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    </style>
+""", unsafe_allowed_html=True)
 
-st.title("كافي أونلاين 🛍️")
-st.subheader("حاسبة تكلفة الطلب من الخارج")
+# --- 2. الثوابت وحاسبة العملة ---
+EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني
+SHIPPING_FEE = 18.75    # شحن تقديري
+SERVICE_FEE = 0.05     # 5% رسوم خدمة
+WHATSAPP_NUMBER = "967700000000"  # ضع رقم الواتساب الخاص بك هنا
 
-# تنبيه مناطق التوصيل
-st.info("📍 **مناطق التوصيل المتاحة حالياً:** حضرموت - عدن فقط.")
+# --- 3. قاعدة بيانات المنتجات الموسعة لكل الأقسام ---
+if 'catalog' not in st.session_state:
+    st.session_state.catalog = [
+        # ملابس نساء
+        {"id": 1, "title": "فستان صيفي أنيق", "category": "ملابس نساء", "price_sar": 85.0, "image": "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500", "tags": "فستان نسائي ملابس صيفي نساء"},
+        {"id": 2, "title": "عباية مودرن راقية", "category": "ملابس نساء", "price_sar": 150.0, "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500", "tags": "عباية نساء ملابس خروج"},
+        
+        # ملابس رجال
+        {"id": 3, "title": "قميص كاجوال رجالي", "category": "ملابس رجال", "price_sar": 65.0, "image": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500", "tags": "قميص رجالي ثوب بلوزة رجال"},
+        {"id": 4, "title": "جاكيت شتوي أنيق", "category": "ملابس رجال", "price_sar": 130.0, "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500", "tags": "جاكيت كوت شتاء رجال"},
+        
+        # ملابس أطفال
+        {"id": 5, "title": "طقم أطفال قطني مريح", "category": "ملابس أطفال", "price_sar": 45.0, "image": "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=500", "tags": "طفل أطفال طقم ملابس ولادي بناتي"},
+        {"id": 6, "title": "فستان بناتي صغير", "category": "ملابس أطفال", "price_sar": 50.0, "image": "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=500", "tags": "فستان أطفال بناتي زهور"},
+        
+        # ساعات
+        {"id": 7, "title": "ساعة يد كلاسيك رجالية", "category": "ساعات", "price_sar": 120.0, "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=500", "tags": "ساعة ساعات جلد رجالي"},
+        {"id": 8, "title": "ساعة ذكية مقاومة للماء", "category": "ساعات", "price_sar": 110.0, "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500", "tags": "ساعة ذكية ساعات smart watch"},
+        
+        # إكسسوارات
+        {"id": 9, "title": "سوار ذهبي أنيق", "category": "إكسسوارات", "price_sar": 40.0, "image": "https://images.unsplash.com/photo-1611591475281-b1c9ad53741c?w=500", "tags": "سوار إسوارة مجوهرات إكسسوارات نسائي"},
+        {"id": 10, "title": "نظارة شمسية كلاسيك", "category": "إكسسوارات", "price_sar": 55.0, "image": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=500", "tags": "نظارة شمس إكسسوارات رجالي نسائي"},
+        
+        # عناية وتجميل
+        {"id": 11, "title": "طقم عناية بالبشرة متكامل", "category": "عناية", "price_sar": 95.0, "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500", "tags": "عناية بشرة كريم غسول تجميل"},
+        {"id": 12, "title": "عطر رجالي فخم", "category": "عناية", "price_sar": 140.0, "image": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=500", "tags": "عطر عناية بخور عطور"},
+        
+        # إلكترونيات
+        {"id": 13, "title": "سماعات بلوتوث لاسلكية", "category": "إلكترونيات", "price_sar": 75.0, "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500", "tags": "سماعة بلوتوث إلكترونيات ايربودز"},
+    ]
 
-st.write("أدخل رابط المنتج وسعره بالريال السعودي لحساب التكلفة التقديرية بالريال اليمني.")
+# --- 4. واجهة الموقع ---
+st.markdown("<h1 class='main-title'>كافي أونلاين 🛍️</h1>", unsafe_allowed_html=True)
+st.markdown("<p class='sub-title'>ابحث عن أي غرض أو اختر من الأقسام التالية</p>", unsafe_allowed_html=True)
 
-# --- واجهة المستخدم ---
-product_url = st.text_input("رابط المنتج", placeholder="https://www.shein.com/...")
+# شريط البحث الرئيسي
+st.markdown("<div class='search-box'>", unsafe_allowed_html=True)
+search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، ساعة، قميص، طقم أطفال، نظارة...)")
+st.markdown("</div>", unsafe_allowed_html=True)
 
-with st.form("calc_form"):
-    city = st.selectbox("اختر مدينة التوصيل", ["حضرموت", "عدن"])
-    price_sar = st.number_input(
-        "سعر المنتج بالريال السعودي (SAR)", 
-        min_value=0.0, 
-        value=0.0, 
-        step=1.0, 
-        format="%.2f"
-    )
-    submitted = st.form_submit_button("احسب التكلفة")
+# قائمة الأقسام الموسعة
+categories = ["الكل", "🔥 العروض", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
+selected_category = st.radio("تصفح القسم:", categories, horizontal=True)
 
-if submitted:
-    if price_sar <= 0:
-        st.error("يرجى إدخال سعر المنتج بشكل صحيح.")
+# --- 5. فلترة البحث والمنتجات المشابهة ---
+matched_products = []
+similar_products = []
+
+if search_query.strip():
+    query = search_query.strip().lower()
+    for item in st.session_state.catalog:
+        if query in item["title"].lower() or query in item["tags"].lower() or query in item["category"].lower():
+            matched_products.append(item)
+    
+    if matched_products:
+        matched_cats = {p["category"] for p in matched_products}
+        matched_ids = {p["id"] for p in matched_products}
+        similar_products = [
+            p for p in st.session_state.catalog 
+            if p["category"] in matched_cats and p["id"] not in matched_ids
+        ]
+else:
+    if selected_category == "🔥 العروض":
+        matched_products = [p for p in st.session_state.catalog if p["price_sar"] <= 75.0]
+    elif selected_category != "الكل":
+        matched_products = [p for p in st.session_state.catalog if p["category"] == selected_category]
     else:
-        service_fee_sar = price_sar * SERVICE_FEE_PERCENT
-        total_sar = price_sar + SHIPPING_FEE_SAR + service_fee_sar
-        total_yer = total_sar * EXCHANGE_RATE_SAR_TO_YER
-        
-        st.success("تم حساب التكلفة بنجاح!")
-        st.markdown(f"### 💵 التكلفة الإجمالية: **{total_yer:,.0f} ريال يمني**")
-        
-        st.write("---")
-        st.write("**تفاصيل الحساب:**")
-        st.write(f"- مدينة التوصيل: `{city}`")
-        st.write(f"- سعر المنتج: `{price_sar:.2f} ر.س`")
-        st.write(f"- الشحن التقديري: `{SHIPPING_FEE_SAR:.2f} ر.س`")
-        st.write(f"- رسوم الخدمة (5%): `{service_fee_sar:.2f} ر.س`")
-        st.write(f"- سعر صرف الريال السعودي: `{EXCHANGE_RATE_SAR_TO_YER:,.0f} ر.ي`")
-        
-        st.warning("🛡️ **ضمان كافي أونلاين:** إذا لم تصلك شحنتك لأي سبب، نضمن لك استرجاع أموالك بالكامل.")
-        
-        msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n"
-        msg += f"📍 المدينة: {city}\n"
-        if product_url:
-            msg += f"🔗 الرابط: {product_url}\n"
-        msg += f"💰 السعر بالريال السعودي: {price_sar:.2f} ر.س\n"
-        msg += f"🇾🇪 التكلفة الإجمالية المقدرة: {total_yer:,.0f} ريال يمني"
-        
-        whatsapp_url = f"https://wa.me/{YOUR_WHATSAPP_NUMBER}?text={urllib.parse.quote(msg)}"
-        st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="display:inline-block; background-color:#25D366; color:white; padding:10px 20px; text-decoration:none; border-radius:5px; font-weight:bold;">📲 إرسال الطلب عبر الواتساب</a>', unsafe_allowed_html=True)
+        matched_products = st.session_state.catalog
 
+# --- 6. دالة عرض الكروت ---
+def render_product_card(prod, badge_text=None):
+    tot_sar = prod["price_sar"] + SHIPPING_FEE + (prod["price_sar"] * SERVICE_FEE)
+    tot_yer = tot_sar * EXCHANGE_RATE
+    
+    st.markdown("<div class='product-card'>", unsafe_allowed_html=True)
+    if badge_text:
+        st.markdown(f"<span class='tag-badge'>{badge_text}</span>", unsafe_allowed_html=True)
+    st.image(prod["image"], use_column_width=True)
+    st.subheader(prod["title"])
+    st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allowed_html=True)
+    st.caption(f"السعر الأصلي: {prod['price_sar']} ر.س")
+    
+    msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n📦 المنتج: {prod['title']}\n📂 القسم: {prod['category']}\n💰 السعر: {tot_yer:,.0f} ريال يمني"
+    wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(msg)}"
+    st.markdown(f'<a href="{wa_url}" target="_blank" style="display:block; background-color:#25D366; color:white; padding:8px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:0.9rem;">اطلبه الآن 📲</a>', unsafe_allowed_html=True)
+    st.markdown("</div>", unsafe_allowed_html=True)
+
+# --- 7. عرض النتائج ---
 st.write("---")
-st.caption(f"التوصيل: حضرموت وعدن • رسوم الخدمة 5% • سعر الصرف {EXCHANGE_RATE_SAR_TO_YER:,.0f} ر.ي")
+
+if search_query.strip():
+    if matched_products:
+        st.success(f"🎯 وجدت لك **{len(matched_products)}** منتج يطابق بحثك:")
+        cols = st.columns(3)
+        for idx, prod in enumerate(matched_products):
+            with cols[idx % 3]:
+                render_product_card(prod, "مطابق للبحث 🎯")
+        
+        if similar_products:
+            st.write("---")
+            st.subheader("💡 أغراض مشابهة قد تعجبك:")
+            sim_cols = st.columns(3)
+            for idx, prod in enumerate(similar_products):
+                with sim_cols[idx % 3]:
+                    render_product_card(prod, "مقترح لك ⭐")
+    else:
+        st.warning(f"لم أجد منتجاً باسم '{search_query}'. يمكنك طلب هذا الغرض تحديداً عبر الواتساب:")
+        custom_msg = f"السلام عليكم، أبحث عن غرض باسم: ({search_query}) هل هو متوفر لديكم؟"
+        custom_wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(custom_msg)}"
+        st.markdown(f'<a href="{custom_wa_url}" target="_blank" style="display:inline-block; background-color:#25D366; color:white; padding:10px 20px; border-radius:6px; font-weight:bold; text-decoration:none;">📲 اسألنا عن هذا الغرض عبر الواتساب</a>', unsafe_allowed_html=True)
+
+else:
+    cols = st.columns(3)
+    for idx, prod in enumerate(matched_products):
+        with cols[idx % 3]:
+            render_product_card(prod)
+
+# --- 8. الفوتر ---
+st.write("---")
+st.info("📍 **مناطق التوصيل:** حضرموت - عدن فقط | ضمان استرجاع 100%")

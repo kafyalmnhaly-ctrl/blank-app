@@ -94,7 +94,9 @@ if 'catalog' not in st.session_state:
         {"id": 2, "title": "عباية مودرن راقية", "category": "ملابس نساء", "price_sar": 150.0, "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500", "tags": "عباية نساء ملابس خروج"},
         
         # أحذية وحقائب
-        {"id": 14, "title": "حذاء رياضي نسائي أنيق", "category": "أحذية وحقائب", "price_sar": 56.76, "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500", "tags": "حذاء شوز جزمه رياضي نسائي كاجوال 2026"},
+ {"id": 15, "title": "2026 أحذية رياضية أرثوبيدية سميكة الأساس للنساء", "category": "أحذية وحقائب", "price_sar": 55.0, "image": "https://i.ibb.co/SDMDv3MH/image.jpg", "tags": "حذاء رياضي نسائي أرثوبيدي كاجوال نعل سميك أربطة مريح 2026"},
+
+     {"id": 14, "title": "حذاء رياضي نسائي أنيق", "category": "أحذية وحقائب", "price_sar": 56.76, "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500", "tags": "حذاء شوز جزمه رياضي نسائي كاجوال 2026"},
 
         # ملابس رجال
         {"id": 3, "title": "قميص كاجوال رجالي", "category": "ملابس رجال", "price_sar": 65.0, "image": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500", "tags": "قميص رجالي ثوب بلوزة رجال"},

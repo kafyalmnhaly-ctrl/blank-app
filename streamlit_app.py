@@ -62,8 +62,7 @@ st.markdown("""
 EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني
 SHIPPING_FEE = 18.75    # شحن تقديري
 SERVICE_FEE = 0.05     # 5% رسوم خدمة
-WHATSAPP_NUMBER = "966580384981"
-  # ضع رقم الواتساب للخاص بك هنا
+WHATSAPP_NUMBER = "966580384981"  # رقمك المعتمد
 
 # --- 3. قاعدة بيانات المنتجات الموسعة لكل الأقسام ---
 if 'catalog' not in st.session_state:
@@ -72,6 +71,9 @@ if 'catalog' not in st.session_state:
         {"id": 1, "title": "فستان صيفي أنيق", "category": "ملابس نساء", "price_sar": 85.0, "image": "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500", "tags": "فستان نسائي ملابس صيفي نساء"},
         {"id": 2, "title": "عباية مودرن راقية", "category": "ملابس نساء", "price_sar": 150.0, "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500", "tags": "عباية نساء ملابس خروج"},
         
+        # أحذية وحقائب (القسم الجديد)
+        {"id": 14, "title": "حذاء رياضي نسائي أنيق", "category": "أحذية وحقائب", "price_sar": 56.76, "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500", "tags": "حذاء شوز جزمه رياضي نسائي كاجوال 2026"},
+
         # ملابس رجال
         {"id": 3, "title": "قميص كاجوال رجالي", "category": "ملابس رجال", "price_sar": 65.0, "image": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500", "tags": "قميص رجالي ثوب بلوزة رجال"},
         {"id": 4, "title": "جاكيت شتوي أنيق", "category": "ملابس رجال", "price_sar": 130.0, "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500", "tags": "جاكيت كوت شتاء رجال"},
@@ -102,11 +104,11 @@ st.markdown("<p class='sub-title'>ابحث عن أي غرض أو اختر من �
 
 # شريط البحث الرئيسي
 st.markdown("<div class='search-box'>", unsafe_allow_html=True)
-search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، ساعة، قميص، طقم أطفال، نظارة...)")
+search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، حذاء، ساعة، قميص...)")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# قائمة الأقسام الموسعة
-categories = ["الكل", "🔥 العروض", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
+# قائمة الأقسام الموسعة المحدثة
+categories = ["الكل", "🔥 العروض", "أحذية وحقائب", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
 selected_category = st.radio("تصفح القسم:", categories, horizontal=True)
 
 # --- 5. فلترة البحث والمنتجات المشابهة ---
@@ -143,7 +145,6 @@ def render_product_card(prod, badge_text=None):
     if badge_text:
         st.markdown(f"<span class='tag-badge'>{badge_text}</span>", unsafe_allow_html=True)
     
-    # المعامل المصحح هنا ليتوافق مع أحدث نسخة من Streamlit
     st.image(prod["image"], use_container_width=True)
     st.subheader(prod["title"])
     st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allow_html=True)

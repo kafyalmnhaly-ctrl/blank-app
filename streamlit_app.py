@@ -56,7 +56,7 @@ st.markdown("""
         font-weight: bold;
     }
     </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # --- 2. الثوابت وحاسبة العملة ---
 EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني
@@ -96,13 +96,13 @@ if 'catalog' not in st.session_state:
     ]
 
 # --- 4. واجهة الموقع ---
-st.markdown("<h1 class='main-title'>كافي أونلاين 🛍️</h1>", unsafe_allowed_html=True)
-st.markdown("<p class='sub-title'>ابحث عن أي غرض أو اختر من الأقسام التالية</p>", unsafe_allowed_html=True)
+st.markdown("<h1 class='main-title'>كافي أونلاين 🛍️</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sub-title'>ابحث عن أي غرض أو اختر من الأقسام التالية</p>", unsafe_allow_html=True)
 
 # شريط البحث الرئيسي
-st.markdown("<div class='search-box'>", unsafe_allowed_html=True)
+st.markdown("<div class='search-box'>", unsafe_allow_html=True)
 search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، ساعة، قميص، طقم أطفال، نظارة...)")
-st.markdown("</div>", unsafe_allowed_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # قائمة الأقسام الموسعة
 categories = ["الكل", "🔥 العروض", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
@@ -138,18 +138,18 @@ def render_product_card(prod, badge_text=None):
     tot_sar = prod["price_sar"] + SHIPPING_FEE + (prod["price_sar"] * SERVICE_FEE)
     tot_yer = tot_sar * EXCHANGE_RATE
     
-    st.markdown("<div class='product-card'>", unsafe_allowed_html=True)
+    st.markdown("<div class='product-card'>", unsafe_allow_html=True)
     if badge_text:
-        st.markdown(f"<span class='tag-badge'>{badge_text}</span>", unsafe_allowed_html=True)
+        st.markdown(f"<span class='tag-badge'>{badge_text}</span>", unsafe_allow_html=True)
     st.image(prod["image"], use_column_width=True)
     st.subheader(prod["title"])
-    st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allowed_html=True)
+    st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allow_html=True)
     st.caption(f"السعر الأصلي: {prod['price_sar']} ر.س")
     
     msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n📦 المنتج: {prod['title']}\n📂 القسم: {prod['category']}\n💰 السعر: {tot_yer:,.0f} ريال يمني"
     wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(msg)}"
-    st.markdown(f'<a href="{wa_url}" target="_blank" style="display:block; background-color:#25D366; color:white; padding:8px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:0.9rem;">اطلبه الآن 📲</a>', unsafe_allowed_html=True)
-    st.markdown("</div>", unsafe_allowed_html=True)
+    st.markdown(f'<a href="{wa_url}" target="_blank" style="display:block; background-color:#25D366; color:white; padding:8px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:0.9rem;">اطلبه الآن 📲</a>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 7. عرض النتائج ---
 st.write("---")
@@ -173,7 +173,7 @@ if search_query.strip():
         st.warning(f"لم أجد منتجاً باسم '{search_query}'. يمكنك طلب هذا الغرض تحديداً عبر الواتساب:")
         custom_msg = f"السلام عليكم، أبحث عن غرض باسم: ({search_query}) هل هو متوفر لديكم؟"
         custom_wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(custom_msg)}"
-        st.markdown(f'<a href="{custom_wa_url}" target="_blank" style="display:inline-block; background-color:#25D366; color:white; padding:10px 20px; border-radius:6px; font-weight:bold; text-decoration:none;">📲 اسألنا عن هذا الغرض عبر الواتساب</a>', unsafe_allowed_html=True)
+        st.markdown(f'<a href="{custom_wa_url}" target="_blank" style="display:inline-block; background-color:#25D366; color:white; padding:10px 20px; border-radius:6px; font-weight:bold; text-decoration:none;">📲 اسألنا عن هذا الغرض عبر الواتساب</a>', unsafe_allow_html=True)
 
 else:
     cols = st.columns(3)

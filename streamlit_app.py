@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# تحسين الهوية البصرية ودعم الهواتف
+# تحسين الهوية البصرية وإصلاح ظهور الأقسام
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
@@ -46,6 +46,13 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
+    /* إصلاح نص خيارات الأقسام */
+    div[data-testid="stMarkdownContainer"] p {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        color: #1f2937 !important;
+    }
+    
     .product-card {
         background: #ffffff;
         border-radius: 16px;
@@ -60,19 +67,12 @@ st.markdown("""
         height: 100%;
     }
     
-    .product-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    
     .product-title {
         font-size: 1.1rem;
         font-weight: 700;
         color: #111827;
         margin: 0.8rem 0;
         line-height: 1.4;
-        height: 2.8em;
-        overflow: hidden;
     }
     
     .price-tag-sar {
@@ -125,13 +125,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 2. إعدادات المتجر العامة ---
-PHONE_NUMBER = "967770000000"  # ضع رقم الواتساب الخاص بك هنا بالصيغة الدولية بدون +
-SAR_TO_YER = 425.0             # سعر صرف الريال السعودي مقابل الريال اليمني
+PHONE_NUMBER = "967770000000"  # ضع رقم الواتساب الخاص بك هنا
+SAR_TO_YER = 425.0             # سعر الصرف
 
-# --- 3. قاعدة بيانات المنتجات (المنتجات الحقيقية) ---
+# --- 3. قاعدة بيانات المنتجات ---
 if 'catalog' not in st.session_state:
     st.session_state.catalog = [
-        # أحذية وحقائب
         {
             "id": 1, 
             "title": "2026 أحذية رياضية أرثوبيدية سميكة الأساس للنساء", 
@@ -152,11 +151,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# قسم البحث والتصفية
+# قسم البحث
 search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم المنتج (مثال: فستان، حذاء، ساعة، قميص...)")
 
+# قائمة الأقسام بأسلوب القائمة المنسدلة الواضحة
 categories = ["الكل 🔥", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "أحذية وحقائب", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
-selected_category = st.radio("اختر قسم المتجر:", categories, horizontal=True)
+selected_category = st.selectbox("اختر قسم المتجر عرضاً:", categories)
 
 # فلترة المنتجات
 filtered_products = st.session_state.catalog
@@ -170,23 +170,21 @@ if search_query:
         if search_query.lower() in p["title"].lower() or search_query.lower() in p["tags"].lower()
     ]
 
-# عرض المنتجات
 st.markdown("<br>", unsafe_allow_html=True)
 
+# عرض المنتجات
 if not filtered_products:
-    st.info("لم نتمكن من العثور على منتجات تطابق بحثك حالياً.")
+    st.info("لم نتمكن من العثور على منتجات تطابق بحثك في هذا القسم حالياً.")
 else:
-    cols = st.columns(3)  # عرض 3 منتجات في السطر
+    cols = st.columns(3)
     for idx, prod in enumerate(filtered_products):
         with cols[idx % 3]:
             price_yer = prod['price_sar'] * SAR_TO_YER
             
-            # تجهيز نص رسالة الطلب للواتساب
             message = f"مرحباً بكافي أونلاين 👋\nأرغب في طلب المنتج التالي:\n- *المنتج:* {prod['title']}\n- *السعر:* {prod['price_sar']} ر.س ({price_yer:,.0f} ر.ي)\n- *الرابط:* {prod['image']}"
             encoded_message = urllib.parse.quote(message)
             whatsapp_url = f"https://wa.me/{PHONE_NUMBER}?text={encoded_message}"
             
-            # تجهيز نص المشاركة
             share_text = f"شاهد هذا المنتج المميز من كافي أونلاين: {prod['title']} بسعر {prod['price_sar']} ر.س"
             encoded_share = urllib.parse.quote(share_text)
             share_url = f"https://api.whatsapp.com/send?text={encoded_share}"
@@ -210,6 +208,5 @@ else:
 st.markdown("""
 <div class="footer">
     <p>© 2026 كافي أونلاين - جميع الحقوق محفوظة</p>
-    <p>خدمة العملاء والتوصيل السريع متوفرة دائماً</p>
 </div>
 """, unsafe_allow_html=True)

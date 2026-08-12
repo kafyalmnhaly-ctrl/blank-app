@@ -59,19 +59,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 2. الثوابت وحاسبة العملة ---
-EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني
-SHIPPING_FEE = 18.75    # شحن تقديري
-SERVICE_FEE = 0.05     # 5% رسوم خدمة
-WHATSAPP_NUMBER = "966580384981"  # رقمك المعتمد
+EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني مقابل الريال السعودي
+WHATSAPP_NUMBER = "966580384981"  # رقم الواتساب الخاص بك
 
-# --- 3. قاعدة بيانات المنتجات الموسعة لكل الأقسام ---
+# --- 3. قاعدة بيانات المنتجات (السعر المدخل هنا هو السعر النهائي المباشر) ---
 if 'catalog' not in st.session_state:
     st.session_state.catalog = [
         # ملابس نساء
         {"id": 1, "title": "فستان صيفي أنيق", "category": "ملابس نساء", "price_sar": 85.0, "image": "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500", "tags": "فستان نسائي ملابس صيفي نساء"},
         {"id": 2, "title": "عباية مودرن راقية", "category": "ملابس نساء", "price_sar": 150.0, "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500", "tags": "عباية نساء ملابس خروج"},
         
-        # أحذية وحقائب (القسم الجديد)
+        # أحذية وحقائب
         {"id": 14, "title": "حذاء رياضي نسائي أنيق", "category": "أحذية وحقائب", "price_sar": 56.76, "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500", "tags": "حذاء شوز جزمه رياضي نسائي كاجوال 2026"},
 
         # ملابس رجال
@@ -107,7 +105,7 @@ st.markdown("<div class='search-box'>", unsafe_allow_html=True)
 search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، حذاء، ساعة، قميص...)")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# قائمة الأقسام الموسعة المحدثة
+# قائمة الأقسام الموسعة
 categories = ["الكل", "🔥 العروض", "أحذية وحقائب", "ملابس نساء", "ملابس رجال", "ملابس أطفال", "ساعات", "إكسسوارات", "عناية", "إلكترونيات"]
 selected_category = st.radio("تصفح القسم:", categories, horizontal=True)
 
@@ -138,7 +136,8 @@ else:
 
 # --- 6. دالة عرض الكروت ---
 def render_product_card(prod, badge_text=None):
-    tot_sar = prod["price_sar"] + SHIPPING_FEE + (prod["price_sar"] * SERVICE_FEE)
+    # السعر النهائي المباشر بالريال السعودي وتحويله المباشر لليمني
+    tot_sar = prod["price_sar"]
     tot_yer = tot_sar * EXCHANGE_RATE
     
     st.markdown("<div class='product-card'>", unsafe_allow_html=True)
@@ -148,9 +147,9 @@ def render_product_card(prod, badge_text=None):
     st.image(prod["image"], use_container_width=True)
     st.subheader(prod["title"])
     st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allow_html=True)
-    st.caption(f"السعر الأصلي: {prod['price_sar']} ر.س")
+    st.caption(f"السعر: {prod['price_sar']} ر.س")
     
-    msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n📦 المنتج: {prod['title']}\n📂 القسم: {prod['category']}\n💰 السعر: {tot_yer:,.0f} ريال يمني"
+    msg = f"السلام عليكم، أرغب بطلب المنتج التالي عبر كافي أونلاين:\n📦 المنتج: {prod['title']}\n📂 القسم: {prod['category']}\n💰 السعر: {tot_yer:,.0f} ريال يمني ({prod['price_sar']} ر.س)"
     wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(msg)}"
     st.markdown(f'<a href="{wa_url}" target="_blank" style="display:block; background-color:#25D366; color:white; padding:8px; border-radius:6px; font-weight:bold; text-decoration:none; font-size:0.9rem;">اطلبه الآن 📲</a>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)

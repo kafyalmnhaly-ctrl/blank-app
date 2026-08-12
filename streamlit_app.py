@@ -62,7 +62,7 @@ st.markdown("""
 EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني
 SHIPPING_FEE = 18.75    # شحن تقديري
 SERVICE_FEE = 0.05     # 5% رسوم خدمة
-WHATSAPP_NUMBER = "967700000000"  # ضع رقم الواتساب الخاص بك هنا
+WHATSAPP_NUMBER = "966‏‪580384981‬"  # ضع رقم الواتساب الخاص بك هنا
 
 # --- 3. قاعدة بيانات المنتجات الموسعة لكل الأقسام ---
 if 'catalog' not in st.session_state:

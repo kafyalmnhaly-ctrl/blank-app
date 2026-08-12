@@ -21,34 +21,34 @@ st.markdown("""
     }
     .sub-title {
         text-align: center;
-        color: #666;
+        color: #888;
         font-size: 1.1rem;
         margin-bottom: 20px;
     }
     .search-box {
-        background-color: #f9f9f9;
+        background-color: #1f1f1f;
         padding: 15px;
         border-radius: 12px;
-        border: 1px solid #ddd;
+        border: 1px solid #333;
         margin-bottom: 20px;
     }
     .product-card {
-        background-color: #ffffff;
-        border: 1px solid #eee;
+        background-color: #1a1a1a;
+        border: 1px solid #333;
         border-radius: 12px;
         padding: 15px;
         text-align: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         margin-bottom: 20px;
     }
     .price-tag {
-        color: #2E7D32;
+        color: #4CAF50;
         font-size: 1.3rem;
         font-weight: bold;
         margin: 5px 0;
     }
     .tag-badge {
-        background-color: #FFE5E5;
+        background-color: #4A1515;
         color: #FF4B4B;
         padding: 3px 8px;
         border-radius: 5px;

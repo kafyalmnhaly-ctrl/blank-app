@@ -23,7 +23,26 @@ st.markdown("""
         text-align: center;
         color: #888;
         font-size: 1.1rem;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+    }
+    .share-container {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .share-btn {
+        display: inline-block;
+        background-color: #25D366;
+        color: white !important;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+        transition: transform 0.2s;
+    }
+    .share-btn:hover {
+        transform: scale(1.05);
     }
     .search-box {
         background-color: #1f1f1f;
@@ -61,8 +80,13 @@ st.markdown("""
 # --- 2. الثوابت وحاسبة العملة ---
 EXCHANGE_RATE = 445.0  # سعر الصرف بالريال اليمني مقابل الريال السعودي
 WHATSAPP_NUMBER = "966580384981"  # رقم الواتساب الخاص بك
+STORE_URL = "https://kafyalmnhaly-blank-app-streamlit-app-5s1203.streamlit.app"  # رابط متجرك
 
-# --- 3. قاعدة بيانات المنتجات (السعر المدخل هنا هو السعر النهائي المباشر) ---
+# نص رسالة مشاركة المتجر
+SHARE_MSG = f"تسوق أونلاين بأفضل الأسعار وأحدث المنتجات من متجر *كافي أونلاين* 🛍️✨\n\nتصفح المنتجات واطلب فوراً عبر هذا الرابط:\n{STORE_URL}"
+SHARE_WA_URL = f"https://wa.me/?text={urllib.parse.quote(SHARE_MSG)}"
+
+# --- 3. قاعدة بيانات المنتجات ---
 if 'catalog' not in st.session_state:
     st.session_state.catalog = [
         # ملابس نساء
@@ -100,6 +124,15 @@ if 'catalog' not in st.session_state:
 st.markdown("<h1 class='main-title'>كافي أونلاين 🛍️</h1>", unsafe_allow_html=True)
 st.markdown("<p class='sub-title'>ابحث عن أي غرض أو اختر من الأقسام التالية</p>", unsafe_allow_html=True)
 
+# زر مشاركة الموقع عبر الواتساب في الأعلى
+st.markdown(f"""
+    <div class='share-container'>
+        <a href='{SHARE_WA_URL}' target='_blank' class='share-btn'>
+            📲 شارك المتجر مع الأصدقاء على الواتساب
+        </a>
+    </div>
+""", unsafe_allow_html=True)
+
 # شريط البحث الرئيسي
 st.markdown("<div class='search-box'>", unsafe_allow_html=True)
 search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟", placeholder="اكتب اسم الغرض (مثال: فستان، حذاء، ساعة، قميص...)")
@@ -136,7 +169,6 @@ else:
 
 # --- 6. دالة عرض الكروت ---
 def render_product_card(prod, badge_text=None):
-    # السعر النهائي المباشر بالريال السعودي وتحويله المباشر لليمني
     tot_sar = prod["price_sar"]
     tot_yer = tot_sar * EXCHANGE_RATE
     
@@ -184,6 +216,15 @@ else:
         with cols[idx % 3]:
             render_product_card(prod)
 
-# --- 8. الفوتر ---
+# --- 8. الفوتر وزر المشاركة السفلية ---
 st.write("---")
 st.info("📍 **مناطق التوصيل:** حضرموت - عدن فقط | ضمان استرجاع 100%")
+
+st.markdown(f"""
+    <div style='text-align: center; margin-top: 15px;'>
+        <p style='color: #888;'>أعجبك المتجر؟ شاركه مع من تحب 🔗</p>
+        <a href='{SHARE_WA_URL}' target='_blank' class='share-btn'>
+            📲 مشاركة رابط المتجر عبر الواتساب
+        </a>
+    </div>
+""", unsafe_allow_html=True)

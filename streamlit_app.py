@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# تحسين الهوية البصرية وتنسيق الأزرار الأفقية والفلترة الفرعية
+# تصحيح تنسيق CSS لإظهار أسماء الأقسام بوضوح
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
@@ -46,7 +46,7 @@ st.markdown("""
         font-size: 1.05rem;
     }
 
-    /* تنسيق أزرار الأقسام الأفقية */
+    /* إصلاح ألوان أزرار الأقسام والخيارات */
     div[role="radiogroup"] {
         display: flex !important;
         flex-direction: row !important;
@@ -58,30 +58,31 @@ st.markdown("""
 
     div[role="radiogroup"] > label {
         background-color: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
+        border: 1.5px solid #d1d5db !important;
         border-radius: 12px !important;
-        padding: 8px 18px !important;
+        padding: 8px 16px !important;
         margin: 0 !important;
         cursor: pointer !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
-        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04) !important;
     }
 
-    div[role="radiogroup"] > label:hover {
-        border-color: #2563eb !important;
-        background-color: #eff6ff !important;
-    }
-
-    div[role="radiogroup"] > label[data-checked="true"] {
-        background-color: #2563eb !important;
-        color: white !important;
-        border-color: #2563eb !important;
-    }
-
-    div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
-        color: inherit !important;
+    /* تحديد لون النص بشكل صريح ليظهر باللون الأسود/الداكن */
+    div[role="radiogroup"] label p, 
+    div[role="radiogroup"] label span {
+        color: #1f2937 !important;
         font-weight: 700 !important;
         font-size: 0.95rem !important;
+    }
+
+    /* التنسيق عند تحديد القسم */
+    div[role="radiogroup"] > label[data-checked="true"] {
+        background-color: #2563eb !important;
+        border-color: #2563eb !important;
+    }
+
+    div[role="radiogroup"] > label[data-checked="true"] p,
+    div[role="radiogroup"] > label[data-checked="true"] span {
+        color: #ffffff !important;
     }
     
     .product-card {
@@ -90,12 +91,7 @@ st.markdown("""
         padding: 1.2rem;
         border: 1px solid #e5e7eb;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
         margin-bottom: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        height: 100%;
     }
     
     .product-title {
@@ -130,7 +126,6 @@ st.markdown("""
         border-radius: 10px;
         font-weight: 700;
         text-decoration: none;
-        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
     }
 
     .share-btn {
@@ -144,7 +139,6 @@ st.markdown("""
         font-weight: 700;
         text-decoration: none;
         margin-bottom: 0.5rem;
-        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.2);
     }
     
     .footer {
@@ -158,10 +152,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 2. إعدادات المتجر العامة ---
-PHONE_NUMBER = "967770000000"  # ضع رقم الواتساب الخاص بك هنا
-SAR_TO_YER = 425.0             # سعر الصرف
+PHONE_NUMBER = "967770000000"
+SAR_TO_YER = 425.0
 
-# --- 3. قاعدة بيانات المنتجات ---
+# --- 3. قاعدة البيانات ---
 if 'catalog' not in st.session_state:
     st.session_state.catalog = [
         # --- مستلزمات نسائية ---
@@ -334,9 +328,8 @@ if 'catalog' not in st.session_state:
         }
     ]
 
-# --- 4. واجهة الموقع ---
+# --- 4. واجهة المستخدم ---
 
-# الهيدر الرئيسي
 st.markdown("""
 <div class="main-header">
     <h1>🛍️ كافي أونلاين</h1>
@@ -349,14 +342,14 @@ search_query = st.text_input("🔍 ماذا تريد أن تطلب اليوم؟"
 
 # قائمة الأقسام الرئيسية
 main_categories = ["الكل 🔥", "مستلزمات رجالية", "مستلزمات نسائية", "مستلزمات أطفال", "إلكترونيات", "أدوات منزلية"]
-selected_main = st.radio("اختر القسم الرئيسي:", main_categories, horizontal=True, label_visibility="collapsed", key="main_cat")
+selected_main = st.radio("اختر القسم الرئيسي:", main_categories, horizontal=True, key="main_cat")
 
-# الفلترة الفرعية (تظهر عند اختيار أقسام معينة)
+# الفلترة الفرعية
 selected_sub = "الكل"
 if selected_main in ["مستلزمات رجالية", "مستلزمات نسائية"]:
     sub_categories = ["الكل", "ملابس", "بناطيل", "حقائب", "إكسسوارات", "أحذية"]
-    st.markdown("<p style='text-align: center; font-weight: bold; margin-bottom: 5px; color: #4b5563;'>التصنيف الفرعي:</p>", unsafe_allow_html=True)
-    selected_sub = st.radio("اختر التصنيف الفرعي:", sub_categories, horizontal=True, label_visibility="collapsed", key="sub_cat")
+    st.markdown("<p style='text-align: center; font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #374151;'>التصنيف الفرعي:</p>", unsafe_allow_html=True)
+    selected_sub = st.radio("اختر التصنيف الفرعي:", sub_categories, horizontal=True, key="sub_cat")
 
 # تطبيق الفلترة
 filtered_products = st.session_state.catalog
@@ -384,7 +377,6 @@ else:
         with cols[idx % 3]:
             price_yer = prod['price_sar'] * SAR_TO_YER
             
-            # الخيارات (اللون والمقاس)
             selected_color = ""
             if prod.get("options_color"):
                 selected_color = st.selectbox(f"اللون ({prod['title'][:12]}...):", prod["options_color"], key=f"col_{prod['id']}")
@@ -393,8 +385,8 @@ else:
             if prod.get("options_size"):
                 selected_size = st.selectbox(f"المقاس ({prod['title'][:12]}...):", prod["options_size"], key=f"siz_{prod['id']}")
             
-            color_text = f"\n- *اللون المختارات:* {selected_color}" if selected_color else ""
-            size_text = f"\n- *المقاس المختارات:* {selected_size}" if selected_size else ""
+            color_text = f"\n- *اللون المختار:* {selected_color}" if selected_color else ""
+            size_text = f"\n- *المقاس المختار:* {selected_size}" if selected_size else ""
             
             message = f"مرحباً بكافي أونلاين 👋\nأرغب في طلب المنتج التالي:\n- *المنتج:* {prod['title']}{color_text}{size_text}\n- *السعر:* {prod['price_sar']} ر.س ({price_yer:,.0f} ر.ي)\n- *الرابط:* {prod['image']}"
             encoded_message = urllib.parse.quote(message)
@@ -406,16 +398,12 @@ else:
 
             st.markdown(f"""
             <div class="product-card">
-                <div>
-                    <img src="{prod['image']}" style="width: 100%; height: 220px; object-fit: cover; border-radius: 12px;">
-                    <div class="product-title">{prod['title']}</div>
-                </div>
-                <div>
-                    <div class="price-tag-sar">{prod['price_sar']} <small>ر.س</small></div>
-                    <div class="price-tag-yer">يعادل تقريباً: {price_yer:,.0f} ر.ي</div>
-                    <a href="{share_url}" target="_blank" class="share-btn">📲 مشاركة المنتج</a>
-                    <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">💬 اطلب عبر الواتساب</a>
-                </div>
+                <img src="{prod['image']}" style="width: 100%; height: 220px; object-fit: cover; border-radius: 12px;">
+                <div class="product-title">{prod['title']}</div>
+                <div class="price-tag-sar">{prod['price_sar']} <small>ر.س</small></div>
+                <div class="price-tag-yer">يعادل تقريباً: {price_yer:,.0f} ر.ي</div>
+                <a href="{share_url}" target="_blank" class="share-btn">📲 مشاركة المنتج</a>
+                <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">💬 اطلب عبر الواتساب</a>
             </div>
             """, unsafe_allow_html=True)
 

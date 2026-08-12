@@ -141,7 +141,9 @@ def render_product_card(prod, badge_text=None):
     st.markdown("<div class='product-card'>", unsafe_allow_html=True)
     if badge_text:
         st.markdown(f"<span class='tag-badge'>{badge_text}</span>", unsafe_allow_html=True)
-    st.image(prod["image"], use_column_width=True)
+    
+    # المعامل المصحح هنا ليتوافق مع أحدث نسخة من Streamlit
+    st.image(prod["image"], use_container_width=True)
     st.subheader(prod["title"])
     st.markdown(f"<p class='price-tag'>{tot_yer:,.0f} ر.ي</p>", unsafe_allow_html=True)
     st.caption(f"السعر الأصلي: {prod['price_sar']} ر.س")
